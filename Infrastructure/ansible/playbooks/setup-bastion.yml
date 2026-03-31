@@ -1,0 +1,75 @@
+---
+- name: Configure AWS bastion host
+  hosts: bastion
+  become: true
+  vars:
+    wireguard_interface: wg0
+    wireguard_listen_port: 51820
+    wireguard_config_path: /etc/wireguard/wg0.conf
+    wireguard_post_up: iptables -A FORWARD -i wg0 -j ACCEPT
+    wireguard_post_down: iptables -D FORWARD -i wg0 -j ACCEPT
+  tasks:
+    - name: Install bastion packages
+      ansible.builtin.package:
+        name:
+          - wireguard-tools
+          - openssh-server
+          - iptables-services
+        state: present
+
+    - name: Ensure SSH include directory exists
+      ansible.builtin.file:
+        path: /etc/ssh/sshd_config.d
+        state: directory
+        mode: "0755"
+
+    - name: Deploy bastion SSH hardening config
+      ansible.builtin.template:
+        src: ../templates/99-bastion-hardening.conf.j2
+        dest: /etc/ssh/sshd_config.d/99-bastion-hardening.conf
+        mode: "0644"
+      notify: Restart sshd
+
+    - name: Install admin authorized keys for bastion user
+      ansible.posix.authorized_key:
+        user: "{{ bastion_ssh_user | default(ansible_user) }}"
+        key: "{{ item }}"
+        state: present
+      loop: "{{ bastion_admin_public_keys | default([]) }}"
+      when: bastion_admin_public_keys is defined
+
+    - name: Ensure WireGuard directory exists
+      ansible.builtin.file:
+        path: /etc/wireguard
+        state: directory
+        mode: "0700"
+
+    - name: Deploy WireGuard config on bastion
+      ansible.builtin.template:
+        src: ../../vpn/wg0.conf.j2
+        dest: "{{ wireguard_config_path }}"
+        mode: "0600"
+      notify: Restart wireguard
+
+    - name: Ensure sshd is enabled
+      ansible.builtin.systemd:
+        name: sshd
+        enabled: true
+        state: started
+
+    - name: Ensure WireGuard is enabled
+      ansible.builtin.systemd:
+        name: "wg-quick@{{ wireguard_interface }}"
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+
+    - name: Restart wireguard
+      ansible.builtin.systemd:
+        name: "wg-quick@{{ wireguard_interface }}"
+        state: restarted

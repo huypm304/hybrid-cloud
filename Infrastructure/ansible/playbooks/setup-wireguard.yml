@@ -1,0 +1,33 @@
+---
+- name: Configure WireGuard VPN on VPS and Local
+  hosts: vps:local
+  become: true
+  vars:
+    wireguard_interface: wg0
+    wireguard_listen_port: 51820
+    wireguard_config_path: /etc/wireguard/wg0.conf
+    wireguard_post_up: iptables -A FORWARD -i wg0 -j ACCEPT
+    wireguard_post_down: iptables -D FORWARD -i wg0 -j ACCEPT
+  tasks:
+    - name: Install WireGuard packages
+      ansible.builtin.package:
+        name: wireguard
+        state: present
+
+    - name: Ensure WireGuard directory exists
+      ansible.builtin.file:
+        path: /etc/wireguard
+        state: directory
+        mode: "0700"
+
+    - name: Deploy WireGuard config from template
+      ansible.builtin.template:
+        src: ../../vpn/wg0.conf.j2
+        dest: "{{ wireguard_config_path }}"
+        mode: "0600"
+
+    - name: Enable WireGuard service
+      ansible.builtin.systemd:
+        name: "wg-quick@{{ wireguard_interface }}"
+        enabled: true
+        state: restarted

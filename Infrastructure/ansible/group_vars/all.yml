@@ -1,0 +1,4 @@
+wireguard_interface: wg0
+wireguard_listen_port: 51820
+wireguard_post_up: iptables -A FORWARD -i wg0 -j ACCEPT
+wireguard_post_down: iptables -D FORWARD -i wg0 -j ACCEPT

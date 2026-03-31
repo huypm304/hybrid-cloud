@@ -364,12 +364,12 @@ gitops-infra/
 └── README.md
 ```
 
-### 18.3 Infrastructure Repository (`infra-platform`)
+### 18.3 Infrastructure Repository (`Infrastructure`)
 
 Contains Infrastructure as Code and automation scripts.
 
 ```
-infra-platform/
+Infrastructure/
 ├── terraform/              # Terraform modules
 │   ├── aws/                # AWS resources (S3, EC2, Route53)
 │   │   ├── main.tf
@@ -439,7 +439,7 @@ infra-platform/
          ▲
          │ Provision
 ┌────────┴────────┐
-│   infra-platform│
+│ Infrastructure  │
 │   (IaC)         │
 └─────────────────┘
 ```

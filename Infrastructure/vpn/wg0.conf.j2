@@ -1,0 +1,18 @@
+[Interface]
+PrivateKey = {{ wireguard_private_key }}
+Address = {{ wireguard_address }}
+ListenPort = {{ wireguard_listen_port | default(51820) }}
+PostUp = {{ wireguard_post_up | default('iptables -A FORWARD -i wg0 -j ACCEPT') }}
+PostDown = {{ wireguard_post_down | default('iptables -D FORWARD -i wg0 -j ACCEPT') }}
+
+{% for peer in wireguard_peers %}
+[Peer]
+PublicKey = {{ peer.public_key }}
+AllowedIPs = {{ peer.allowed_ips }}
+{% if peer.endpoint is defined %}
+Endpoint = {{ peer.endpoint }}
+{% endif %}
+{% if peer.persistent_keepalive is defined %}
+PersistentKeepalive = {{ peer.persistent_keepalive }}
+{% endif %}
+{% endfor %}

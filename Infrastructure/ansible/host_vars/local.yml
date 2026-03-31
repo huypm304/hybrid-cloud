@@ -1,0 +1,7 @@
+wireguard_private_key: "CHANGE_ME_LOCAL_PRIVATE_KEY"
+wireguard_address: 10.10.0.2/24
+wireguard_peers:
+  - public_key: "CHANGE_ME_VPS_PUBLIC_KEY"
+    endpoint: 14.225.208.14:51820
+    allowed_ips: 10.10.0.1/32
+    persistent_keepalive: 25

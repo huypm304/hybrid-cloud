@@ -1,0 +1,10 @@
+wireguard_private_key: "CHANGE_ME_BASTION_PRIVATE_KEY"
+wireguard_address: 10.10.0.254/24
+wireguard_peers:
+  - public_key: "CHANGE_ME_VPS_PUBLIC_KEY"
+    allowed_ips: 10.10.0.1/32
+
+bastion_ssh_port: 22
+bastion_ssh_user: ec2-user
+bastion_admin_public_keys:
+  - "CHANGE_ME_SSH_PUBLIC_KEY"
