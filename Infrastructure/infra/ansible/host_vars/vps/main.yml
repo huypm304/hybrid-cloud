@@ -1,4 +1,4 @@
-wireguard_private_key: "CHANGE_ME_VPS_PRIVATE_KEY"
+wireguard_private_key: "{{ vps_wireguard_private_key }}"
 wireguard_address: 10.10.0.1/24
 wireguard_peers:
   - public_key: "CHANGE_ME_LOCAL_PUBLIC_KEY"

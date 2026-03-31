@@ -1,0 +1,8 @@
+*.pem
+*.key
+*.vault_password
+.vault_pass
+.vault_pass.txt
+.vault_pass.bastion.txt
+.vault_pass.vps.txt
+.vault_pass.worker.txt

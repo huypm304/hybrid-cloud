@@ -49,8 +49,8 @@ A hybrid infrastructure platform:
 | Layer | Component | Role |
 |------|----------|------|
 | Cloud | AWS | Gateway, DNS, Terraform state |
-| Control | VPS | K3s Master, Jenkins, ArgoCD |
-| Compute | Local PC | K3s Worker, workloads, monitoring |
+| Control | VPS | K3s Control Plane (Master), Jenkins, ArgoCD |
+| Compute | Local PC | K3s Worker (Slave), workloads, monitoring |
 
 ---
 
@@ -69,7 +69,7 @@ Purpose:
 
 ---
 
-### 5.2 VPS (Control Plane)
+### 5.2 VPS (Control Plane / Master)
 
 Acts as "Brain" of the system.
 
@@ -89,7 +89,7 @@ Characteristics:
 
 ---
 
-### 5.3 Local Machine (Worker Node)
+### 5.3 Local Machine (Worker Node / Slave)
 
 Acts as "Muscle" of the system.
 
@@ -139,7 +139,7 @@ All nodes are connected using WireGuard VPN.
    - Build Docker image
    - Security scan (Trivy)
    - Push to private registry
-   - Update GitOps repo
+   - Update Infrastructure repo
 5. ArgoCD detects changes
 6. ArgoCD syncs to Kubernetes
 7. K3s deploys workload on Local node
@@ -161,14 +161,14 @@ All nodes are connected using WireGuard VPN.
    The built Docker image is scanned for vulnerabilities (e.g., using Trivy).
 5. **Push to Private Registry**  
    If the build and scan succeed, the Docker image is pushed to the private registry hosted on the VPS.
-6. **Update GitOps Repository**  
-   Jenkins updates the GitOps configuration repository (e.g., modifies image tag in Kubernetes manifests).
+6. **Update Infrastructure Repository**  
+   Jenkins updates the Infrastructure repository (e.g., modifies image tag in Kubernetes manifests).
 7. **ArgoCD detects changes**  
-   ArgoCD (running on the VPS) automatically detects changes in the GitOps repo.
+   ArgoCD (running on the VPS) automatically detects changes in the Infrastructure repo.
 8. **ArgoCD syncs to Kubernetes**  
    ArgoCD applies the updated manifests to the K3s cluster.
 9. **K3s deploys workload**  
-   The new application version is deployed to the local machine (worker node).
+   The new application version is deployed to the local machine (worker/slave node).
 10. **Application is live**  
    The updated application becomes available to users.
 
@@ -306,7 +306,7 @@ It reflects practical skills required for DevOps and System Engineering roles.
 
 ## 18. Project Repository Structure
 
-This project uses a **multi-repo architecture** for better separation of concerns:
+This project uses a **two-repo architecture** for better separation of concerns:
 
 ### 18.1 Application Repository (`my-app`)
 
@@ -330,85 +330,70 @@ my-app/
 └── README.md
 ```
 
-### 18.2 GitOps Repository (`gitops-infra`)
+### 18.2 Platform Repository (`Infrastructure`)
 
-Contains Kubernetes manifests and ArgoCD configurations.
-
-```
-gitops-infra/
-├── apps/                   # Application manifests
-│   └── my-app/
-│       ├── deployment.yaml
-│       ├── service.yaml
-│       ├── ingress.yaml
-│       └── configmap.yaml
-│
-├── base/                   # Kustomize base configs
-│   └── my-app/
-│       ├── kustomization.yaml
-│       └── resources/
-│
-├── environments/           # Environment-specific overlays
-│   ├── dev/
-│   │   ├── kustomization.yaml
-│   │   └── my-app.yaml
-│   ├── staging/
-│   │   └── my-app.yaml
-│   └── prod/
-│       └── my-app.yaml
-│
-├── argocd/                 # ArgoCD application definitions
-│   ├── applications.yaml
-│   └── projects.yaml
-│
-└── README.md
-```
-
-### 18.3 Infrastructure Repository (`Infrastructure`)
-
-Contains Infrastructure as Code and automation scripts.
+Contains Kubernetes manifests, ArgoCD configurations, Infrastructure as Code, and automation scripts.
 
 ```
 Infrastructure/
-├── terraform/              # Terraform modules
-│   ├── aws/                # AWS resources (S3, EC2, Route53)
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   ├── vps/                # VPS provisioning
-│   └── modules/            # Reusable modules
+├── gitops/                 # GitOps manifests and ArgoCD configs
+│   ├── apps/
+│   │   └── my-app/
+│   │       ├── deployment.yaml
+│   │       ├── service.yaml
+│   │       ├── ingress.yaml
+│   │       └── configmap.yaml
+│   ├── base/
+│   │   └── my-app/
+│   │       ├── kustomization.yaml
+│   │       └── resources/
+│   ├── environments/
+│   │   ├── dev/
+│   │   │   ├── kustomization.yaml
+│   │   │   └── my-app.yaml
+│   │   ├── staging/
+│   │   │   └── my-app.yaml
+│   │   └── prod/
+│   │       └── my-app.yaml
+│   └── argocd/
+│       ├── applications.yaml
+│       └── projects.yaml
 │
-├── ansible/                # Configuration management
-│   ├── inventory/          # Host inventory
-│   ├── playbooks/          # Automation playbooks
-│   │   ├── setup-k3s-master.yaml
-│   │   ├── setup-k3s-agent.yaml
-│   │   └── setup-monitoring.yaml
-│   └── roles/              # Ansible roles
-│
-├── vpn/                    # WireGuard VPN configs
-│   ├── aws.conf
-│   ├── vps.conf
-│   └── local.conf
-│
-├── monitoring/             # Monitoring stack configs
-│   ├── prometheus/
-│   │   └── prometheus.yaml
-│   ├── grafana/
-│   │   └── dashboards/
-│   ├── loki/
-│   │   └── loki-config.yaml
-│   └── alertmanager/
-│       └── alertmanager.yaml
-│
-├── scripts/                # Utility scripts
-│   ├── setup-local.sh
-│   ├── backup.sh
-│   └── health-check.sh
-│
-├── docs/                   # Infrastructure documentation
-│   ├── setup/
-│   └── troubleshooting/
+├── infra/                  # Infrastructure provisioning and ops
+│   ├── terraform/
+│   │   ├── aws/
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   ├── vps/
+│   │   └── modules/
+│   ├── ansible/
+│   │   ├── inventory/
+│   │   ├── playbooks/
+│   │   │   ├── setup-k3s-master.yaml
+│   │   │   ├── setup-k3s-agent.yaml
+│   │   │   └── setup-monitoring.yaml
+│   │   └── roles/
+│   ├── vpn/
+│   │   ├── aws.conf
+│   │   ├── vps.conf
+│   │   └── local.conf
+│   ├── monitoring/
+│   │   ├── prometheus/
+│   │   │   └── prometheus.yaml
+│   │   ├── grafana/
+│   │   │   └── dashboards/
+│   │   ├── loki/
+│   │   │   └── loki-config.yaml
+│   │   └── alertmanager/
+│   │       └── alertmanager.yaml
+│   ├── scripts/
+│   │   ├── setup-local.sh
+│   │   ├── backup.sh
+│   │   └── health-check.sh
+│   └── docs/
+│       ├── setup/
+│       └── troubleshooting/
 │
 └── README.md
 ```
@@ -426,9 +411,9 @@ Infrastructure/
                                            │ Update image tag
                                            ▼
 ┌─────────────────┐     Sync      ┌─────────────────┐
-│   ArgoCD        │ ◀─────────────│   gitops-infra  │
-│   (GitOps)      │               │   (Manifests)   │
-└────────┬────────┘               └─────────────────┘
+│   ArgoCD        │ ◀─────────────│ Infrastructure   │
+│   (GitOps)      │               │   /gitops       │
+└────────┬────────┘               └────────┬────────┘
          │
          │ Deploy
          ▼
@@ -439,7 +424,7 @@ Infrastructure/
          ▲
          │ Provision
 ┌────────┴────────┐
-│ Infrastructure  │
-│   (IaC)         │
+│ Infrastructure   │
+│     /infra       │
 └─────────────────┘
 ```
